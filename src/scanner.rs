@@ -1,5 +1,7 @@
 
-#[derive(Debug)]
+use serde::Serialize;
+
+#[derive(Debug, Serialize, Clone)]
 pub struct Candidate {
     pub line : usize,
     pub start: usize,
@@ -14,11 +16,11 @@ pub fn start_end_finder(code: &str) -> (usize, usize) {
     let mut start_indx = 0;
     let mut end_indx = 0;
     for (i, line) in code.lines().enumerate(){
-        if line.contains("--start mut") {
+        if line.contains("--start_mut();") {
             start_indx  = i+1;
         }
 
-        if line.contains("--end mut") {
+        if line.contains("--end_mut();") {
             end_indx = i-1;
         }
 
@@ -44,7 +46,7 @@ pub fn symbol_scanner(code: &str, start_indx : usize, end_indx: usize ) -> Vec<C
                 IF = true;
                 j += 2;
             }
-            if SYMBOLS_LIST.contains((&chars[j])) {
+            if IF && SYMBOLS_LIST.contains((&chars[j])) {
                 if chars[j+1] != ' '{
                     tam += 1;
                 }

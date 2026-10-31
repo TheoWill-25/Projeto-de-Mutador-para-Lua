@@ -15,7 +15,7 @@ function ScholarshipEligibilityEvaluator.evaluate_scholarship(
     has_required_courses,
     disciplinary_record
 )
-    --start mut
+    --start_mut();
     assert(gpa >= 0 and gpa <= 10,
         "GPA must be between 0 and 10.")
 
@@ -26,6 +26,7 @@ function ScholarshipEligibilityEvaluator.evaluate_scholarship(
     local rejected = false
     local manual_review = false
 
+    
     if age < 16 then
         rejected = true
         table.insert(reasons,
@@ -68,6 +69,7 @@ function ScholarshipEligibilityEvaluator.evaluate_scholarship(
             "Applicant has a disciplinary record.")
     end
 
+    
     local status
 
     if rejected then
@@ -80,7 +82,7 @@ function ScholarshipEligibilityEvaluator.evaluate_scholarship(
             "Applicant meets all scholarship requirements.")
     end
 
-    --end mut
+    --end_mut();
     return {
         status = status,
         reasons = reasons
