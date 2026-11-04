@@ -24,7 +24,11 @@ Contém as estruturas e funções responsáveis por localizar a região de inter
 - **`start_end_finder(code)`**: procura os marcadores que delimitam a região de mutação.
 - **`symbol_scanner(code, start_indx, end_indx)`**: percorre a região identificada e retorna os candidatos encontrados.
 
-O scanner trabalha com a região delimitada, mas ainda não realiza uma análise sintática completa da linguagem Lua.
+*Nota:* O scanner atual trabalha com a região delimitada via varredura de caracteres. A sua migração para utilização direta do **método de AST** é a **prioridade atual do projeto**.
+
+### `ast.rs` (Método AST)
+
+Módulo responsável pelo método de parsing e geração da **AST (Árvore de Sintaxe Abstrata / Abstract Syntax Tree)** a partir do código Lua. Permite mapear e estruturar o código em nós sintáticos, fornecendo uma representação precisa do programa para análises e manipulações sintáticas.
 
 ### `mutador.rs`
 
@@ -69,11 +73,12 @@ O fluxo geral da ferramenta é composto pelas seguintes etapas:
 
 1. **Leitura do código:** o programa obtém o conteúdo do arquivo Lua de entrada.
 2. **Delimitação:** localiza os marcadores `--start_mut();` e `--end_mut();`.
-3. **Identificação dos operadores:** o scanner percorre a região delimitada e registra os candidatos encontrados.
-4. **Geração dos mutantes:** para cada candidato, o mutador consulta as regras de substituição e cria versões modificadas do código.
-5. **Execução dos testes:** cada versão mutante é escrita no arquivo Lua utilizado pela suíte, e os testes são executados pelo processo externo `lua`.
-6. **Coleta dos resultados:** o programa captura a saída da suíte e identifica as linhas marcadas com `[PASS]` e `[FAIL]`.
-7. **Relatório:** as informações das mutações são armazenadas e serializadas em JSON para análise posterior.
+3. **Análise Sintática via AST:** aplicação do método de geração de AST para estruturação e mapeamento sintático do código.
+4. **Identificação dos operadores:** o scanner percorre a região delimitada e registra os candidatos encontrados.
+5. **Geração dos mutantes:** para cada candidato, o mutador consulta as regras de substituição e cria versões modificadas do código.
+6. **Execução dos testes:** cada versão mutante é escrita no arquivo Lua utilizado pela suíte, e os testes são executados pelo processo externo `lua`.
+7. **Coleta dos resultados:** o programa captura a saída da suíte e identifica as linhas marcadas com `[PASS]` e `[FAIL]`.
+8. **Relatório:** as informações das mutações são armazenadas e serializadas em JSON para análise posterior.
 
 ## 4. Funcionalidades implementadas
 
@@ -81,6 +86,7 @@ Com base nos arquivos e na implementação apresentados durante o desenvolviment
 
 - Leitura do código Lua de entrada.
 - Delimitação da região de mutação por meio dos comentários `--start_mut();` e `--end_mut();`.
+- Método de geração e manipulação de **AST (Árvore de Sintaxe Abstrata)** para análise estruturada do código Lua.
 - Varredura da região delimitada para identificar operadores candidatos.
 - Registro de informações dos candidatos, incluindo linha, posição inicial, posição final, operador original e tipo.
 - Geração de substituições para operadores relacionais e de igualdade, conforme as regras definidas no mutador.
@@ -136,6 +142,7 @@ Os dados são serializados em JSON para facilitar a consulta e a análise poster
 
 - **Rust:** implementação do scanner, geração de mutantes, execução dos processos e organização dos resultados.
 - **Lua:** linguagem dos programas submetidos à mutação e ambiente de execução da suíte de testes.
+- **AST (Abstract Syntax Tree):** método de parsing para representação sintática estruturada do código Lua.
 - **Serde / Serde JSON:** serialização das estruturas de dados para relatórios JSON.
 
 ## 7. Requisitos
@@ -174,6 +181,7 @@ A estrutura abaixo é uma referência baseada nos módulos e arquivos descritos 
 Projeto-de-Mutador-para-Lua/
 ├── src/
 │   ├── main.rs       # Inicialização e coordenação do processo
+│   ├── ast.rs        # Módulo com o método de AST para parsing sintático do código Lua
 │   ├── scanner.rs    # Delimitação da região e identificação dos candidatos
 │   └── mutador.rs    # Geração e execução das mutações
 ├── codigo.lua        # Código Lua submetido à mutação
@@ -186,8 +194,11 @@ Projeto-de-Mutador-para-Lua/
 
 O projeto está em desenvolvimento. Alguns pontos devem ser considerados ao interpretar os resultados:
 
-- A identificação dos operadores depende do scanner e das regras de substituição implementadas; não equivale a uma análise sintática completa da linguagem Lua.
-- A identificação de operadores em comentários, strings e outros contextos sintáticos pode exigir melhorias no scanner.
+### 🚨 PRIORIDADE ALTA / PRÓXIMO PASSO
+- **Reformulação do `scanner.rs` utilizando AST:** A principal prioridade no planejamento do projeto é a refatoração completa do `scanner.rs` para utilizar a AST gerada pelo método em `ast.rs`. Atualmente a varredura é baseada em string/caracteres; ao migrá-la para a AST, o scanner passará a navegar diretamente pelos nós de expressão da árvore sintática, eliminando falso-positivos em comentários ou cadeias de caracteres (strings).
+
+### Outros pontos e limitações
+- A identificação dos operadores no scanner atual depende de regras de busca textual e não equivale a uma análise sintática completa até que a transição do `scanner.rs` para a AST seja finalizada.
 - A cobertura de operadores e os casos de teste ainda podem ser ampliados.
 - A suíte precisa ser executada corretamente para que um mutante seja classificado como morto ou sobrevivente.
 - Erros de sintaxe ou falhas na execução do interpretador devem ser diferenciados de resultados de testes.

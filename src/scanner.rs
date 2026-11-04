@@ -46,8 +46,8 @@ pub fn symbol_scanner(code: &str, start_indx : usize, end_indx: usize ) -> Vec<C
                 IF = true;
                 j += 2;
             }
-            if IF && SYMBOLS_LIST.contains((&chars[j])) {
-                if chars[j+1] != ' '{
+            if SYMBOLS_LIST.contains((&chars[j])) {
+                if SYMBOLS_LIST.contains((&chars[j+1])){
                     tam += 1;
                 }
                 symbols.push(Candidate { 

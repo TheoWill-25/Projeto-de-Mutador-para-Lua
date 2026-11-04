@@ -1,1 +1,198 @@
-[]
+[
+  {
+    "candidate": {
+      "line": 25,
+      "start": 18,
+      "end": 19,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "    local reasons = {}",
+    "mod_line": "    local reasons = {}",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 26,
+      "start": 19,
+      "end": 20,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "    local rejected = false",
+    "mod_line": "    local rejected = false",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 27,
+      "start": 24,
+      "end": 25,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "    local manual_review = false",
+    "mod_line": "    local manual_review = false",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 31,
+      "start": 17,
+      "end": 18,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        rejected = true",
+    "mod_line": "        rejected = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 35,
+      "start": 22,
+      "end": 23,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        manual_review = true",
+    "mod_line": "        manual_review = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 41,
+      "start": 17,
+      "end": 18,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        rejected = true",
+    "mod_line": "        rejected = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 45,
+      "start": 22,
+      "end": 23,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        manual_review = true",
+    "mod_line": "        manual_review = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 51,
+      "start": 17,
+      "end": 18,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        rejected = true",
+    "mod_line": "        rejected = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 55,
+      "start": 22,
+      "end": 23,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        manual_review = true",
+    "mod_line": "        manual_review = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 61,
+      "start": 17,
+      "end": 18,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        rejected = true",
+    "mod_line": "        rejected = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 67,
+      "start": 17,
+      "end": 18,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        rejected = true",
+    "mod_line": "        rejected = true",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 76,
+      "start": 15,
+      "end": 16,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        status = Status.REJECTED",
+    "mod_line": "        status = Status.REJECTED",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 78,
+      "start": 15,
+      "end": 16,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        status = Status.MANUAL_REVIEW",
+    "mod_line": "        status = Status.MANUAL_REVIEW",
+    "num_tests": 25,
+    "failed_tests": []
+  },
+  {
+    "candidate": {
+      "line": 80,
+      "start": 15,
+      "end": 16,
+      "original": "=",
+      "kind": "symbol"
+    },
+    "replacement": "=",
+    "og_line": "        status = Status.APPROVED",
+    "mod_line": "        status = Status.APPROVED",
+    "num_tests": 25,
+    "failed_tests": []
+  }
+]

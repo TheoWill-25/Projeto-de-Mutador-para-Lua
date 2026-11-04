@@ -107,8 +107,8 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
             new_symbs.push(">=".to_string());
             new_symbs.push("==".to_string());
         }
-        "=" =>{
-            new_symbs.push("~=".to_string());
+        "~=" =>{
+            new_symbs.push("==".to_string());
         }
         "~" =>{
             new_symbs.push("".to_string());
