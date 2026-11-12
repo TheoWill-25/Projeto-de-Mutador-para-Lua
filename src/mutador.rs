@@ -21,26 +21,6 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
     
 
     for sym in symbol{
-        let line_offset: usize = code
-            .lines()
-            .take(sym.line - 1)
-            .map(|line| line.len() + 1)
-            .sum();
-
-        let line = code.lines()
-            .nth(sym.line - 1)
-            .unwrap();
-
-        let start_byte = line.char_indices()
-            .nth(sym.start)
-            .map(|(i, _)| i)
-            .unwrap_or(line.len());
-
-        let end_byte = line.char_indices()
-            .nth(sym.end)
-            .map(|(i, _)| i)
-            .unwrap_or(line.len());
-
 
         let new_symbols = symbol_list(&sym);
 
@@ -48,7 +28,7 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
             let mut codigo_mutado = code.to_string();
 
             codigo_mutado.replace_range(
-                line_offset + start_byte..line_offset + end_byte,
+                sym.start..sym.end,
                 &ns
             );
 
@@ -59,11 +39,17 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
             fs::write("codigo.lua", &codigo_mutado).expect("Erro ao escrever arquivo");
 
             let output = Command::new("lua")
-                        .arg("suit.lua")
+                        .arg("suit2.lua")
                         .output()
                         .expect("Erro ao executar Lua");
             
             let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+
+            if !output.status.success() {
+                eprintln!("Erro ao executar os testes:");
+                eprintln!("{}", stderr);
+            }
 
             let mut tests: Vec<String> = Vec::new();
             let mut num: i32 = 0;
@@ -80,7 +66,7 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
             }
 
             mutation.push( Mutation { candidate: sym.clone(), replacement: ns, failed_tests: tests, num_tests: num,
-                                        og_line: line.to_string(), mod_line: linha_modificada.to_string()});
+                                        og_line: sym.line.to_string(), mod_line: linha_modificada.to_string()});
         }
 
         
@@ -129,6 +115,12 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
             new_symbs.push("<=".to_string());
             new_symbs.push(">=".to_string());
             new_symbs.push("~=".to_string());
+        }
+        "and" => {
+            new_symbs.push("or".to_string());
+        }
+        "or" => {
+            new_symbs.push("and".to_string());
         }
         _ => new_symbs.push(sym.original.to_string()),
         
