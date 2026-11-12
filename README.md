@@ -1,209 +1,325 @@
 # Mutador de Código Lua em Rust
 
-Projeto desenvolvido em **Rust** para realizar testes de mutação em programas escritos em **Lua**. A ferramenta identifica operadores em uma região delimitada do código-fonte, gera versões mutantes substituindo esses operadores e executa uma suíte de testes para verificar se as alterações são detectadas.
+Projeto desenvolvido em **Rust** para realizar **testes de mutação** em
+programas escritos em **Lua**. A ferramenta utiliza a biblioteca
+`full_moon` para analisar sintaticamente o código Lua, construir sua
+Árvore de Sintaxe Abstrata (AST) e identificar operadores candidatos à
+mutação.
 
-O objetivo é avaliar a capacidade de uma suíte de testes de identificar pequenas alterações no comportamento de um programa e, assim, ajudar a revelar possíveis lacunas nos casos de teste.
+A partir dos operadores encontrados, o mutador gera versões modificadas
+do código-fonte, executa uma suíte de testes com o interpretador Lua e
+registra os resultados em um relatório JSON.
 
-## 1. Arquivos e módulos do projeto
+O objetivo é avaliar a capacidade de uma suíte de testes de detectar
+pequenas alterações no comportamento de um programa e, assim, ajudar a
+revelar possíveis lacunas nos casos de teste.
+
+## 1. Arquitetura e arquivos do projeto
 
 ### `main.rs`
 
-É o ponto de entrada do programa. Na organização descrita para o projeto, ele coordena as etapas iniciais:
+É o ponto de entrada e coordena o fluxo principal:
 
-1. Lê o arquivo `codigo.lua`.
-2. Localiza a região delimitada pelos marcadores de mutação.
-3. Executa o scanner para encontrar candidatos.
-4. Encaminha os candidatos para as etapas seguintes e apresenta os resultados.
+1.  Lê o arquivo `codigo.lua`.
+2.  Envia o código para o parser Lua.
+3.  Obtém a AST.
+4.  Executa o scanner sobre a AST para localizar os operadores
+    candidatos.
+5.  Encaminha os candidatos e o código original ao mutador.
+6.  Filtra as mutações sobreviventes e gera `relatorio.json`.
+7.  Apresenta a quantidade total de mutações e de sobreviventes.
+
+### `parser.rs`
+
+Responsável por realizar o parsing do código Lua por meio da biblioteca
+`full_moon`.
+
+A função `parse_lua(code)` chama `full_moon::parse` e retorna uma
+estrutura `full_moon::ast::Ast`. Caso o código não possa ser
+interpretado, a implementação atual interrompe a execução com uma
+mensagem de erro.
 
 ### `scanner.rs`
 
-Contém as estruturas e funções responsáveis por localizar a região de interesse e identificar os operadores candidatos.
+Contém a implementação do scanner baseada na AST.
 
-- **`Candidate`**: estrutura que representa um candidato à mutação, contendo linha, posições inicial e final, texto original e categoria.
-- **`SYMBOLS_LIST`**: lista de símbolos que o scanner procura.
-- **`start_end_finder(code)`**: procura os marcadores que delimitam a região de mutação.
-- **`symbol_scanner(code, start_indx, end_indx)`**: percorre a região identificada e retorna os candidatos encontrados.
+O módulo utiliza o trait `Visitor` de `full_moon` para percorrer a
+árvore sintática. Ao visitar expressões, verifica se elas são expressões
+binárias (`Expression::BinaryOperator`) e identifica os operadores
+suportados.
 
-*Nota:* O scanner atual trabalha com a região delimitada via varredura de caracteres. A sua migração para utilização direta do **método de AST** é a **prioridade atual do projeto**.
+Cada ocorrência encontrada é armazenada em uma estrutura `Candidate`,
+que registra:
 
-### `ast.rs` (Método AST)
+-   `line`: linha em que o operador aparece;
+-   `start`: posição inicial do token em bytes;
+-   `end`: posição final do token em bytes;
+-   `original`: representação textual do operador;
+-   `kind`: categoria do operador.
 
-Módulo responsável pelo método de parsing e geração da **AST (Árvore de Sintaxe Abstrata / Abstract Syntax Tree)** a partir do código Lua. Permite mapear e estruturar o código em nós sintáticos, fornecendo uma representação precisa do programa para análises e manipulações sintáticas.
+O scanner atual identifica operadores relacionais, de igualdade e
+lógicos, conforme as variantes tratadas no `match` de
+`visit_expression`.
+
+**Diferentemente de uma busca textual**, a identificação ocorre sobre
+nós sintáticos da AST. Dessa forma, o scanner considera operadores
+reconhecidos como parte de expressões binárias, em vez de procurar
+indiscriminadamente sequências de caracteres no arquivo.
 
 ### `mutador.rs`
 
-É responsável pela geração e execução das mutações. A partir dos candidatos identificados pelo scanner, consulta as substituições possíveis para cada operador, produz versões modificadas do código e executa a suíte de testes usando o interpretador Lua.
+Responsável por gerar, executar e registrar os mutantes.
 
-As informações coletadas durante cada execução são organizadas em estruturas de mutação para posterior geração do relatório.
+Para cada candidato recebido, o módulo:
+
+1.  Consulta `symbol_list` para obter as substituições previstas para o
+    operador original.
+2.  Cria uma cópia do código-fonte original.
+3.  Substitui o intervalo de bytes correspondente ao token identificado
+    na AST.
+4.  Escreve temporariamente o código modificado em `codigo.lua`.
+5.  Executa `suit.lua` por meio do processo externo `lua`.
+6.  Analisa a saída padrão em busca das marcações `[PASS]` e `[FAIL]`.
+7.  Armazena os dados da mutação em uma estrutura `Mutation`.
+
+Ao final, o código original é restaurado em `codigo.lua`.
+
+A estrutura `Mutation` registra o candidato original, o operador
+substituto, a linha original, a linha modificada, a quantidade de testes
+contabilizados e os nomes dos testes que falharam.
 
 ### `codigo.lua`
 
-É o arquivo Lua submetido à análise e à mutação. No exemplo utilizado durante o desenvolvimento, contém a função `ScholarshipEligibilityEvaluator.evaluate_scholarship`, que avalia a elegibilidade de uma pessoa para uma bolsa.
+Arquivo Lua submetido à análise e à mutação.
+
+No exemplo utilizado durante o desenvolvimento, contém a implementação
+de `ScholarshipEligibilityEvaluator.evaluate_scholarship`, responsável
+por avaliar a elegibilidade de uma pessoa para uma bolsa.
 
 ### `suit.lua`
 
-Contém a suíte de testes executada contra o código original e suas versões mutadas. A saída dos testes é utilizada pelo mutador para identificar os resultados, por meio das marcações `[PASS]` e `[FAIL]`.
+Contém os testes executados contra o código original e cada versão
+mutante. A suíte utiliza `pcall` para capturar falhas durante a execução
+de cada caso e imprime as marcações `[PASS]` e `[FAIL]`, que são
+interpretadas pelo mutador.
 
-## 2. Delimitação da região de mutação
+## 2. Análise sintática com AST
 
-Para evitar alterações em partes indevidas do programa, o mutador utiliza comentários especiais como marcadores de início e fim da região elegível:
+A integração com AST substitui a identificação dos operadores baseada
+exclusivamente em varredura textual.
 
-```lua
---start_mut();
+O processo é composto por duas etapas:
 
--- Trecho de código que poderá receber mutações
-if gpa < 6 then
-    rejected = true
-elseif gpa < 7 then
-    manual_review = true
-end
+1.  **Parsing:** `parser.rs` utiliza `full_moon::parse` para converter o
+    código Lua em uma estrutura AST.
+2.  **Visitação:** `scanner.rs` implementa
+    `full_moon::visitors::Visitor` e percorre a árvore, examinando
+    expressões binárias.
 
---end_mut();
-```
+Quando uma expressão binária contém um operador contemplado pela
+implementação, o scanner registra o token e suas posições no
+código-fonte. Essas posições são utilizadas posteriormente pelo mutador
+para substituir somente o operador selecionado.
 
-O scanner procura esses marcadores e considera como região de interesse o trecho delimitado por eles. Assim, a intenção é restringir a identificação de candidatos e a geração de mutantes à parte do código selecionada pelo desenvolvedor.
+Essa abordagem permite que a identificação seja orientada pela estrutura
+sintática do programa, reduzindo falsos positivos que poderiam ocorrer
+em uma busca textual, por exemplo, ao encontrar símbolos semelhantes
+dentro de comentários ou strings.
 
-Essa delimitação permite preservar trechos que não fazem parte do experimento, como declarações, validações iniciais e lógica posterior à região de mutação.
+**Observação sobre o escopo:** na implementação apresentada, o scanner
+percorre a AST inteira. A delimitação por marcadores `--start_mut();` e
+`--end_mut();` não está integrada ao fluxo atual. Portanto, não se deve
+considerar que somente uma região delimitada é analisada.
 
-**Importante:** os marcadores devem ser escritos exatamente como `--start_mut();` e `--end_mut();` no arquivo Lua. Ambos precisam estar presentes para que a região seja localizada corretamente.
+## 3. Fluxo de funcionamento
 
-## 3. Como funciona
+O fluxo geral da ferramenta é:
 
-O fluxo geral da ferramenta é composto pelas seguintes etapas:
+1.  **Leitura:** obtém o conteúdo de `codigo.lua`.
+2.  **Parsing:** converte o código Lua em uma AST usando `full_moon`.
+3.  **Visitação da AST:** percorre as expressões sintáticas e identifica
+    os operadores suportados.
+4.  **Registro dos candidatos:** armazena operador, categoria, linha e
+    posições em bytes.
+5.  **Geração dos mutantes:** cria uma versão independente do código
+    original para cada substituição.
+6.  **Execução da suíte:** grava o mutante em `codigo.lua` e executa
+    `lua suit.lua`.
+7.  **Coleta dos resultados:** contabiliza as linhas `[PASS]` e `[FAIL]`
+    encontradas na saída padrão.
+8.  **Restauração:** grava novamente o código original em `codigo.lua`.
+9.  **Relatório:** serializa as mutações sobreviventes em
+    `relatorio.json` e imprime as estatísticas no terminal.
 
-1. **Leitura do código:** o programa obtém o conteúdo do arquivo Lua de entrada.
-2. **Delimitação:** localiza os marcadores `--start_mut();` e `--end_mut();`.
-3. **Análise Sintática via AST:** aplicação do método de geração de AST para estruturação e mapeamento sintático do código.
-4. **Identificação dos operadores:** o scanner percorre a região delimitada e registra os candidatos encontrados.
-5. **Geração dos mutantes:** para cada candidato, o mutador consulta as regras de substituição e cria versões modificadas do código.
-6. **Execução dos testes:** cada versão mutante é escrita no arquivo Lua utilizado pela suíte, e os testes são executados pelo processo externo `lua`.
-7. **Coleta dos resultados:** o programa captura a saída da suíte e identifica as linhas marcadas com `[PASS]` e `[FAIL]`.
-8. **Relatório:** as informações das mutações são armazenadas e serializadas em JSON para análise posterior.
+## 4. Operadores e substituições
 
-## 4. Funcionalidades implementadas
+As substituições são definidas pela função `symbol_list` em
+`mutador.rs`. As regras presentes na implementação enviada são:
 
-Com base nos arquivos e na implementação apresentados durante o desenvolvimento, o projeto contempla:
+  Operador original   Substituições previstas
+  ------------------- ----------------------------
+  `<`                 `>`, `<=`, `==`
+  `>`                 `<`, `>=`, `==`
+  `~=`                `==`
+  `~`                 remoção do operador
+  `<=`                `<`, `>`, `==`
+  `>=`                `<`, `>`, `==`
+  `==`                `<`, `>`, `<=`, `>=`, `~=`
+  `and`               `or`
+  `or`                `and`
 
-- Leitura do código Lua de entrada.
-- Delimitação da região de mutação por meio dos comentários `--start_mut();` e `--end_mut();`.
-- Método de geração e manipulação de **AST (Árvore de Sintaxe Abstrata)** para análise estruturada do código Lua.
-- Varredura da região delimitada para identificar operadores candidatos.
-- Registro de informações dos candidatos, incluindo linha, posição inicial, posição final, operador original e tipo.
-- Geração de substituições para operadores relacionais e de igualdade, conforme as regras definidas no mutador.
-- Criação de mutantes independentes a partir do código original.
-- Escrita temporária do código mutado no arquivo Lua utilizado pela suíte.
-- Execução da suíte de testes por meio do interpretador Lua.
-- Captura e interpretação das linhas de saída identificadas com `[PASS]` e `[FAIL]`.
-- Armazenamento de informações sobre cada mutação, incluindo operador substituto, linha original, linha modificada, quantidade de testes contabilizados e testes que falharam.
-- Serialização dos dados das mutações para geração de relatórios em JSON.
-
-### 4.1. Operadores e substituições
-
-As substituições são definidas pelas regras implementadas na função responsável por mapear o operador original para seus possíveis mutantes. Entre as regras documentadas no código estão:
-
-| Operador original | Substituições previstas |
-|---|---|
-| `<` | `>`, `<=`, `==` |
-| `>` | `<`, `>=`, `==` |
-| `=` | `~=` |
-| `~` | remoção do operador |
-| `<=` | `<`, `>`, `==` |
-| `>=` | `<`, `>`, `==` |
-| `==` | `<`, `>`, `<=`, `>=`, `~=` |
-
-As substituições efetivamente geradas dependem do operador identificado e das regras presentes na função de geração de símbolos.
+A lista acima representa as regras implementadas no código enviado. O
+scanner identifica os operadores lógicos e relacionais tratados
+explicitamente em `visit_expression`; a função de mutação define as
+substituições disponíveis para cada um.
 
 ## 5. Resultados e classificação dos mutantes
 
-A análise dos resultados utiliza os conceitos de teste de mutação:
+Em testes de mutação, os resultados são interpretados da seguinte
+maneira:
 
-- **Killed (morto):** pelo menos um teste falha ao executar contra o mutante. Isso indica que a suíte detectou a alteração.
-- **Survived (sobrevivente):** todos os testes esperados foram executados e passaram contra o mutante. A suíte não detectou a alteração.
-- **Inconclusive (inconclusivo):** a execução não foi concluída corretamente ou não há evidências suficientes de que os testes foram executados. Esse caso não deve ser confundido com um mutante sobrevivente.
+-   **Killed (morto):** pelo menos um teste falha ao executar contra o
+    mutante.
+-   **Survived (sobrevivente):** os testes executados não detectam a
+    alteração.
+-   **Inconclusive (inconclusivo):** a execução não permite concluir se
+    o mutante foi adequadamente testado, por exemplo, devido a erro de
+    execução ou ausência de evidências de que a suíte foi executada.
 
-A classificação correta exige verificar não apenas a lista de testes que falharam, mas também se a execução terminou adequadamente e se a quantidade esperada de testes foi executada.
+Na implementação atual, `main.rs` considera sobreviventes as mutações
+cujo vetor `failed_tests` está vazio. O `mutador.rs` contabiliza as
+linhas `[PASS]` e `[FAIL]` encontradas em `stdout`.
 
-### 5.1. Informações registradas por mutação
+**Limitação importante:** a implementação enviada ainda não verifica o
+código de saída do processo Lua, não interpreta `stderr` e não valida se
+a quantidade esperada de testes foi executada. Assim, a classificação
+atual por `failed_tests.is_empty()` não distingue completamente uma
+execução válida de uma execução que não produziu resultados. A
+classificação robusta de inconclusivos é um aprimoramento necessário.
 
-Cada mutação armazena informações para identificar e analisar a alteração realizada:
+### 5.1. Relatório JSON
 
-| Campo | Descrição |
-|---|---|
-| `candidate` | Informações do operador original identificado pelo scanner. |
-| `replacement` | Operador utilizado na mutação. |
-| `og_line` | Linha original do código Lua. |
-| `mod_line` | Linha após a substituição do operador. |
-| `num_tests` | Quantidade de testes contabilizados na execução. |
-| `failed_tests` | Nomes dos testes que falharam com o mutante. |
+O arquivo `relatorio.json` contém as mutações classificadas como
+sobreviventes pelo critério atual.
 
-Os dados são serializados em JSON para facilitar a consulta e a análise posterior.
+Cada registro de mutação possui:
 
-## 6. Tecnologias utilizadas
+  -----------------------------------------------------------------------
+  Campo                               Descrição
+  ----------------------------------- -----------------------------------
+  `candidate`                         Dados do operador original
+                                      identificado pelo scanner.
 
-- **Rust:** implementação do scanner, geração de mutantes, execução dos processos e organização dos resultados.
-- **Lua:** linguagem dos programas submetidos à mutação e ambiente de execução da suíte de testes.
-- **AST (Abstract Syntax Tree):** método de parsing para representação sintática estruturada do código Lua.
-- **Serde / Serde JSON:** serialização das estruturas de dados para relatórios JSON.
+  `replacement`                       Operador utilizado na mutação.
+
+  `og_line`                           Número da linha original,
+                                      armazenado como texto.
+
+  `mod_line`                          Conteúdo da linha após a
+                                      substituição.
+
+  `num_tests`                         Quantidade de marcações `[PASS]` e
+                                      `[FAIL]` contabilizadas.
+
+  `failed_tests`                      Nomes dos testes que falharam com o
+                                      mutante.
+  -----------------------------------------------------------------------
+
+## 6. Tecnologias e dependências
+
+-   **Rust:** implementação do fluxo de análise, scanner, mutador e
+    geração dos relatórios.
+-   **Lua:** linguagem dos programas analisados e ambiente de execução
+    dos testes.
+-   **`full_moon`:** parsing do código Lua e geração da AST.
+-   **`serde`:** serialização das estruturas de dados.
+-   **`serde_json`:** geração dos relatórios em JSON.
+-   **Cargo:** gerenciamento do projeto e de suas dependências Rust.
 
 ## 7. Requisitos
 
-Para executar o projeto, é necessário ter instalado:
+Para executar o projeto, é necessário ter:
 
-- [Rust](https://www.rust-lang.org/tools/install), incluindo Cargo.
-- [Lua](https://www.lua.org/download.html), com o executável `lua` disponível no `PATH`.
-
-As dependências Rust utilizadas pelo projeto são gerenciadas pelo Cargo e declaradas no arquivo `Cargo.toml`.
+-   Rust e Cargo instalados;
+-   Interpretador Lua instalado e disponível no `PATH`;
+-   Dependências Rust declaradas no `Cargo.toml`.
 
 ## 8. Como executar
 
 Clone o repositório:
 
-```bash
+``` bash
 git clone https://github.com/TheoWill-25/Projeto-de-Mutador-para-Lua.git
 cd Projeto-de-Mutador-para-Lua
 ```
 
-Compile e execute o projeto:
+Compile e execute:
 
-```bash
+``` bash
 cargo run
 ```
 
-A execução depende dos arquivos Lua utilizados pelo projeto, incluindo o código submetido à mutação e a suíte de testes. Verifique se os nomes e caminhos desses arquivos correspondem aos utilizados na configuração atual do programa.
+A execução espera encontrar `codigo.lua` e `suit.lua` nos caminhos
+relativos utilizados pelo programa. O comando externo `lua suit.lua`
+também precisa estar disponível no ambiente.
 
-O arquivo `codigo.lua` deve conter os marcadores de início e fim da região de mutação. A suíte `suit.lua` deve estar acessível no caminho esperado pelo comando de execução.
+Ao terminar, o programa apresenta no terminal a quantidade total de
+mutações e a quantidade de mutações sobreviventes. O relatório das
+sobreviventes é gravado em `relatorio.json`.
 
 ## 9. Estrutura do projeto
 
-A estrutura abaixo é uma referência baseada nos módulos e arquivos descritos durante o desenvolvimento. Ajuste os caminhos caso a organização atual do repositório seja diferente:
+A estrutura correspondente aos arquivos apresentados é:
 
-```text
+``` text
 Projeto-de-Mutador-para-Lua/
 ├── src/
-│   ├── main.rs       # Inicialização e coordenação do processo
-│   ├── ast.rs        # Módulo com o método de AST para parsing sintático do código Lua
-│   ├── scanner.rs    # Delimitação da região e identificação dos candidatos
-│   └── mutador.rs    # Geração e execução das mutações
+│   ├── main.rs       # Coordenação do fluxo
+│   ├── parser.rs     # Parsing Lua e geração da AST
+│   ├── scanner.rs    # Visitação da AST e identificação dos operadores
+│   └── mutador.rs    # Geração, execução e registro dos mutantes
 ├── codigo.lua        # Código Lua submetido à mutação
 ├── suit.lua          # Suíte de testes
-├── Cargo.toml        # Configuração do projeto e dependências Rust
-└── README.md
+├── Cargo.toml        # Dependências e configuração Rust
+├── AST.json          # AST serializada pelo main.rs
+└── relatorio.json    # Relatório das mutações sobreviventes
 ```
 
-## 10. Limitações e pontos em desenvolvimento
+Os arquivos `AST.json` e `relatorio.json` são gerados durante a
+execução. A localização efetiva dos módulos e dos arquivos Lua depende
+da configuração do projeto e do diretório de execução.
 
-O projeto está em desenvolvimento. Alguns pontos devem ser considerados ao interpretar os resultados:
+## 10. Limitações e próximos passos
 
-### 🚨 PRIORIDADE ALTA / PRÓXIMO PASSO
-- **Reformulação do `scanner.rs` utilizando AST:** A principal prioridade no planejamento do projeto é a refatoração completa do `scanner.rs` para utilizar a AST gerada pelo método em `ast.rs`. Atualmente a varredura é baseada em string/caracteres; ao migrá-la para a AST, o scanner passará a navegar diretamente pelos nós de expressão da árvore sintática, eliminando falso-positivos em comentários ou cadeias de caracteres (strings).
+Embora a identificação dos operadores já utilize a AST, há pontos que
+podem ser aprimorados:
 
-### Outros pontos e limitações
-- A identificação dos operadores no scanner atual depende de regras de busca textual e não equivale a uma análise sintática completa até que a transição do `scanner.rs` para a AST seja finalizada.
-- A cobertura de operadores e os casos de teste ainda podem ser ampliados.
-- A suíte precisa ser executada corretamente para que um mutante seja classificado como morto ou sobrevivente.
-- Erros de sintaxe ou falhas na execução do interpretador devem ser diferenciados de resultados de testes.
-- O tratamento de marcadores ausentes ou inválidos e de posições inexistentes deve ser robusto para evitar mutações em locais incorretos.
+-   **Delimitação da região de mutação:** integrar os marcadores
+    `--start_mut();` e `--end_mut();` à análise da AST, para restringir
+    a visita aos nós localizados na região selecionada.
+-   **Validação da execução:** verificar o status de saída do processo
+    Lua e capturar também `stderr`.
+-   **Classificação de inconclusivos:** impedir que uma execução sem
+    testes contabilizados seja considerada sobrevivente.
+-   **Validação da suíte:** conferir se a quantidade de testes
+    executados corresponde à quantidade esperada.
+-   **Cobertura de mutadores:** ampliar e revisar as regras de
+    substituição para outros operadores e construções da linguagem.
+-   **Tratamento de erros:** tornar mais robustos os casos de marcadores
+    ausentes, intervalos inválidos, falhas de parsing e problemas ao
+    executar o interpretador.
+-   **Isolamento das execuções:** evitar que a escrita temporária em
+    `codigo.lua` cause interferência entre execuções simultâneas ou
+    deixe o arquivo alterado caso ocorra uma falha inesperada.
 
 ## 11. Objetivo acadêmico
 
-Este projeto explora a aplicação de **teste de mutação** como técnica de avaliação de suítes de testes de software. Ao introduzir pequenas alterações no código-fonte e observar se os testes conseguem detectá-las, é possível identificar possíveis lacunas na estratégia de testes e avaliar a eficácia dos casos de teste desenvolvidos.
+O projeto explora a aplicação de **teste de mutação** como técnica de
+avaliação de suítes de testes de software.
+
+A utilização da AST permite identificar operadores a partir da estrutura
+sintática do programa, tornando a seleção dos pontos de mutação mais
+precisa do que uma busca textual simples. A geração de versões mutantes
+e a execução automatizada dos testes permitem observar se as alterações
+são detectadas pela suíte e identificar possíveis lacunas na cobertura
+dos testes.
