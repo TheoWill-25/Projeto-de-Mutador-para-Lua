@@ -1,16 +1,1 @@
-[
-  {
-    "candidate": {
-      "line": 5,
-      "start": 72,
-      "end": 73,
-      "original": "<",
-      "kind": "ComparisonOperator"
-    },
-    "replacement": "<=",
-    "og_line": "5",
-    "mod_line": "    if age <= 18 then",
-    "num_tests": 2,
-    "failed_tests": []
-  }
-]
+[]

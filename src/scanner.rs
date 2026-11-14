@@ -1,7 +1,7 @@
 
 use serde::Serialize;
 use full_moon::visitors::Visitor;
-use full_moon::ast::{Expression, BinOp};
+use full_moon::ast::{Expression, BinOp, UnOp};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Candidate {
@@ -109,9 +109,73 @@ impl Visitor for Scanner {
                     });
                 }
 
+                BinOp::Plus(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "+".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Minus(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "-".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Star(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "*".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Slash(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "/".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                _=> {}
+
+            }
+            
+        }
+
+        if let Expression::UnaryOperator{ unop, .. } = expr {
+            match unop {
+                UnOp::Not(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "LogicOperator".to_string(),
+                        original: "not".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
                 _=> {}
             }
         }
+        
     }
 }
 

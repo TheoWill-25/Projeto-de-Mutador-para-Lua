@@ -12,10 +12,11 @@ pub struct Mutation {
     pub mod_line : String,
     pub num_tests: i32,
     pub failed_tests: Vec<String>,
+    pub error: bool,
     
 }
 
-pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
+pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>, path_code: String, path_suite: String) -> Vec<Mutation> {
     let mut mutation: Vec<Mutation> = Vec::new();
 
     
@@ -23,9 +24,11 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
     for sym in symbol{
 
         let new_symbols = symbol_list(&sym);
+        
 
         for ns in new_symbols {
             let mut codigo_mutado = code.to_string();
+            let mut error =false;
 
             codigo_mutado.replace_range(
                 sym.start..sym.end,
@@ -36,20 +39,16 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
                 .nth(sym.line - 1)
                 .unwrap();
 
-            fs::write("codigo.lua", &codigo_mutado).expect("Erro ao escrever arquivo");
+            fs::write(&path_code, &codigo_mutado).expect("Erro ao escrever arquivo");
 
             let output = Command::new("lua")
-                        .arg("suit2.lua")
+                        .arg(&path_suite)
                         .output()
                         .expect("Erro ao executar Lua");
             
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
 
-            if !output.status.success() {
-                eprintln!("Erro ao executar os testes:");
-                eprintln!("{}", stderr);
-            }
 
             let mut tests: Vec<String> = Vec::new();
             let mut num: i32 = 0;
@@ -65,15 +64,25 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>) -> Vec<Mutation> {
                 }
             }
 
+            let has_summary =
+                stdout.contains("Tests passed:") &&
+                stdout.contains("Tests failed:");
+
+            if !has_summary {
+                eprintln!("Erro real ao executar os testes:");
+                eprintln!("{}", stderr);
+                error = true;
+            }
+
             mutation.push( Mutation { candidate: sym.clone(), replacement: ns, failed_tests: tests, num_tests: num,
-                                        og_line: sym.line.to_string(), mod_line: linha_modificada.to_string()});
+                                        og_line: code.lines().nth(sym.line - 1).unwrap().to_string(), mod_line: linha_modificada.to_string(), error: error });
         }
 
         
 
     }
 
-    fs::write("codigo.lua", code).expect("Erro ao escrever arquivo");
+    fs::write(&path_code, code).expect("Erro ao escrever arquivo");
 
     mutation
 }
@@ -121,6 +130,9 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
         }
         "or" => {
             new_symbs.push("and".to_string());
+        }
+        "not" => {
+            new_symbs.push(" ".to_string());
         }
         _ => new_symbs.push(sym.original.to_string()),
         

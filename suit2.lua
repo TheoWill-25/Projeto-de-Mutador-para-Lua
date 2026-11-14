@@ -1,4 +1,4 @@
-local Evaluator = require("codigo")
+local Evaluator = require("codigo2")
 
 local passed = 0
 local failed = 0
