@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "candidate": {
+      "line": 6,
+      "start": 88,
+      "end": 89,
+      "original": "<",
+      "kind": "ComparisonOperator"
+    },
+    "replacement": "<=",
+    "og_line": "    if age < 18 then",
+    "mod_line": "    if age <= 18 then",
+    "num_tests": 2,
+    "failed_tests": [],
+    "error": false
+  },
+  {
+    "candidate": {
+      "line": 6,
+      "start": 90,
+      "end": 92,
+      "original": "18",
+      "kind": "NumberValue"
+    },
+    "replacement": "19",
+    "og_line": "    if age < 18 then",
+    "mod_line": "    if age < 19 then",
+    "num_tests": 2,
+    "failed_tests": [],
+    "error": false
+  },
+  {
+    "candidate": {
+      "line": 6,
+      "start": 90,
+      "end": 92,
+      "original": "18",
+      "kind": "NumberValue"
+    },
+    "replacement": "17",
+    "og_line": "    if age < 18 then",
+    "mod_line": "    if age < 17 then",
+    "num_tests": 2,
+    "failed_tests": [],
+    "error": false
+  }
+]

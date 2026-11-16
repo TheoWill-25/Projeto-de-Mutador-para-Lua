@@ -37,6 +37,7 @@ test("Age 25 is approved", function()
     )
 end)
 
+
 print("\n==============================")
 print("Tests passed: " .. passed)
 print("Tests failed: " .. failed)

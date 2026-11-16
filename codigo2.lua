@@ -1,5 +1,6 @@
 local Evaluator = {}
 
+local x = true
 function Evaluator.check_age(age)
 
     if age < 18 then

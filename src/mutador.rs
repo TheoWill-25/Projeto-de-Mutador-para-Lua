@@ -91,51 +91,150 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>, path_code: String, pat
 fn symbol_list(sym: &Candidate) -> Vec<String> {
     let mut new_symbs: Vec<String> = Vec::new();
 
-    match sym.original.as_str() {
-        "<" => {
-            new_symbs.push(">".to_string());
-            new_symbs.push("<=".to_string());
-            new_symbs.push("==".to_string());
+    match sym.kind.as_str() {
+
+        "ComparisonOperator" => {
+            match sym.original.as_str() {
+                "<" => {
+                    new_symbs.push(">".to_string());
+                    new_symbs.push("<=".to_string());
+                    new_symbs.push("==".to_string());
+                    new_symbs.push(">=".to_string());
+                    new_symbs.push("~=".to_string());
+                }
+                ">" => {
+                    new_symbs.push("<".to_string());
+                    new_symbs.push(">=".to_string());
+                    new_symbs.push("==".to_string());
+                    new_symbs.push("<=".to_string());
+                    new_symbs.push("~=".to_string());
+                }
+                "~=" =>{
+                    new_symbs.push("==".to_string());
+                    new_symbs.push("<".to_string());
+                    new_symbs.push(">".to_string());
+                    new_symbs.push("<=".to_string());
+                    new_symbs.push(">=".to_string());
+                }
+                "~" =>{
+                    new_symbs.push("".to_string());
+                }
+                "<=" =>{
+                    new_symbs.push("<".to_string());
+                    new_symbs.push(">".to_string());
+                    new_symbs.push("==".to_string());
+                    new_symbs.push(">=".to_string());
+                    new_symbs.push("~=".to_string());
+                }
+                ">=" =>{
+                    new_symbs.push("<".to_string());
+                    new_symbs.push(">".to_string());
+                    new_symbs.push("==".to_string());
+                    new_symbs.push("<=".to_string());
+                    new_symbs.push("~=".to_string());
+                }
+                "==" =>{
+                    new_symbs.push("<".to_string());
+                    new_symbs.push(">".to_string());
+                    new_symbs.push("<=".to_string());
+                    new_symbs.push(">=".to_string());
+                    new_symbs.push("~=".to_string());
+                }
+                _ => new_symbs.push(sym.original.to_string()),
+            }
         }
-        ">" => {
-            new_symbs.push("<".to_string());
-            new_symbs.push(">=".to_string());
-            new_symbs.push("==".to_string());
+
+        "LogicOperator" => {
+            match sym.original.as_str() {
+                "and" => {
+                    new_symbs.push("or".to_string());
+                }
+                "or" => {
+                    new_symbs.push("and".to_string());
+                }
+                "not" => {
+                    new_symbs.push("".to_string());
+                }
+                _ => new_symbs.push(sym.original.to_string()),
+            }
         }
-        "~=" =>{
-            new_symbs.push("==".to_string());
+        "ArithmeticOperator" => {
+            match sym.original.as_str() {
+                "+" => {
+                    new_symbs.push("-".to_string());
+                    new_symbs.push("*".to_string());
+                    new_symbs.push("/".to_string());
+                    new_symbs.push("%".to_string());
+                    new_symbs.push("^".to_string());
+                }
+                "-" => {
+                    new_symbs.push("+".to_string());
+                    new_symbs.push("*".to_string());
+                    new_symbs.push("/".to_string());
+                    new_symbs.push("%".to_string());
+                    new_symbs.push("^".to_string());
+                }
+                "*" => {
+                    new_symbs.push("+".to_string());
+                    new_symbs.push("-".to_string());
+                    new_symbs.push("/".to_string());
+                    new_symbs.push("%".to_string());
+                    new_symbs.push("^".to_string());
+                }
+                "/" => {
+                    new_symbs.push("+".to_string());
+                    new_symbs.push("-".to_string());
+                    new_symbs.push("*".to_string());
+                    new_symbs.push("%".to_string());
+                    new_symbs.push("^".to_string());
+                }
+                "^" => {
+                    new_symbs.push("+".to_string());
+                    new_symbs.push("-".to_string());
+                    new_symbs.push("*".to_string());
+                    new_symbs.push("/".to_string());
+                    new_symbs.push("%".to_string());
+                }
+                "%" => {
+                    new_symbs.push("+".to_string());
+                    new_symbs.push("-".to_string());
+                    new_symbs.push("*".to_string());
+                    new_symbs.push("/".to_string());
+                    new_symbs.push("^".to_string());
+                }
+
+                _ => new_symbs.push(sym.original.to_string()),
+            }
         }
-        "~" =>{
-            new_symbs.push("".to_string());
-        }
-        "<=" =>{
-            new_symbs.push("<".to_string());
-            new_symbs.push(">".to_string());
-            new_symbs.push("==".to_string());
-        }
-        ">=" =>{
-            new_symbs.push("<".to_string());
-            new_symbs.push(">".to_string());
-            new_symbs.push("==".to_string());
-        }
-        "==" =>{
-            new_symbs.push("<".to_string());
-            new_symbs.push(">".to_string());
-            new_symbs.push("<=".to_string());
-            new_symbs.push(">=".to_string());
-            new_symbs.push("~=".to_string());
-        }
-        "and" => {
-            new_symbs.push("or".to_string());
-        }
-        "or" => {
-            new_symbs.push("and".to_string());
-        }
-        "not" => {
-            new_symbs.push(" ".to_string());
+
+        "NumberValue" => {
+            let numero = sym.original.to_string();
+
+            if let Ok(num) = numero.parse::<i64>() {
+                if num != 0 {
+                    new_symbs.push("0".to_string()); 
+                    new_symbs.push((-num).to_string());
+                }
+
+                if num != 1 {new_symbs.push("1".to_string());}
+                if num != -1 {new_symbs.push("-1".to_string());}
+
+                new_symbs.push((num + 1).to_string());
+                new_symbs.push((num - 1).to_string());
+
+            } else if let Ok(num) = numero.parse::<f64>() {
+                if num != 0.0 {
+                    new_symbs.push("0".to_string());
+                    new_symbs.push((-num).to_string());
+                }
+                if num != 1.0 {new_symbs.push("1".to_string());}
+                if num != -1.0 {new_symbs.push("-1".to_string());}
+                
+                new_symbs.push((num + 1.0).to_string());
+                new_symbs.push((num - 1.0).to_string());
+            }
         }
         _ => new_symbs.push(sym.original.to_string()),
-        
     }
 
     new_symbs

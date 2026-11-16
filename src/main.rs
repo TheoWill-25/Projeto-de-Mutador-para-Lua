@@ -40,6 +40,12 @@ fn executar(path_code: String, path_suite: String) -> Result<Resultado, String> 
     }
 
     let ast = parse_lua(&codigo);
+    let json = serde_json::to_string_pretty(&ast)
+        .expect("Erro ao converter AST para JSON");
+
+    fs::write("AST.json", &json)
+        .expect("Erro ao escrever relatório");
+        
     let symbols = symbol_scanner(&ast);
     let mutation = symbol_mutator(&codigo, symbols, path_code, path_suite);
 
@@ -300,8 +306,8 @@ impl eframe::App for MyApp {
                 });
             });
 
-        // Barra lateral cinza (15%)
-        let largura = ui.available_width() * 0.15;
+        // Barra lateral cinza (25%)
+        let largura = ui.available_width() * 0.25;
         egui::Panel::left("sidebar")
             .resizable(false)
             .exact_size(largura)

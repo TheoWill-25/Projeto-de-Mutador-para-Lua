@@ -153,6 +153,28 @@ impl Visitor for Scanner {
                     });
                 }
 
+                BinOp::Percent(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "%".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Caret(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "^".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
                 _=> {}
 
             }
@@ -174,6 +196,17 @@ impl Visitor for Scanner {
 
                 _=> {}
             }
+        }
+
+        if let Expression::Number(token) = expr {
+
+            self.candidates.push(Candidate {
+                kind: "NumberValue".to_string(),
+                original: token.token().to_string(),
+                start: token.token().start_position().bytes(),
+                end: token.token().end_position().bytes(),
+                line: token.token().start_position().line(),
+            });
         }
         
     }
