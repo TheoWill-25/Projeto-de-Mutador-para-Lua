@@ -44,14 +44,18 @@ Cada ocorrência encontrada é armazenada em uma estrutura `Candidate`, que regi
 
 Os candidatos identificados atualmente são:
 
-| Categoria | Candidatos |
-| --- | --- |
-| Relacionais e de igualdade | `<`, `>`, `<=`, `>=`, `==`, `~=` |
-| Lógicos | `and`, `or` e `not` (este último como operador unário) |
-| Aritméticos binários | `+`, `-`, `*`, `/`, `%`, `^` |
-| Literais numéricos | números reconhecidos como `Expression::Number` |
+| Categoria                  | Candidatos                                             |
+| ---                        | ---                                                    |
+| Relacionais e de igualdade | `<`, `>`, `<=`, `>=`, `==`, `~=`                       |
+| Lógicos                    | `and`, `or` e `not`                                    |
+| Aritméticos binários       | `+`, `-`, `*`, `/`, `//`, `%`, `^`                     |
+| Bit a bit binários         | `&`, `\|`, `~`, `<<`, `>>`                             |
+| Aritméticos unários        | `-`                                                    |
+| Bit a bit unários          | `~`                                                    |
+| Literais numéricos         | números reconhecidos como `Expression::Number`         |
+| Concatenação               | `..`                                                   |
+| Tamanho                    | `#`                                                    |
 
-O `-` só é coletado quando aparece como operador **binário** (por exemplo, `a - b`). O sinal de um número negativo escrito diretamente (por exemplo, `-5`) não é tratado como parte do literal numérico pela regra atual.
 
 **Diferentemente de uma busca textual**, a identificação ocorre sobre nós sintáticos da AST. Dessa forma, o scanner considera apenas o que é reconhecido como parte de expressões, em vez de procurar indiscriminadamente sequências de caracteres no arquivo.
 
@@ -77,9 +81,9 @@ A estrutura `Mutation` registra o candidato original, o valor substituto, a linh
 
 O código a ser mutado e a suíte de testes são escolhidos na interface. Os exemplos do repositório estão organizados nestes pares:
 
-| Código | Suíte |
-| --- | --- |
-| `codigos/codigo.lua` | `suites/suit.lua` |
+| Código                | Suíte              |
+| ---                   | ---                |
+| `codigos/codigo.lua`  | `suites/suit.lua`  |
 | `codigos/codigo2.lua` | `suites/suit2.lua` |
 | `codigos/codigo3.lua` | `suites/suit3.lua` |
 
@@ -108,30 +112,7 @@ Essa abordagem permite que a identificação seja orientada pela estrutura sint�
 
 ## 3. Interface gráfica
 
-A interface foi construída com `eframe`/`egui` e segue uma paleta de cores aproximadamente proporcional a **60% branco, 25% cinza/prata e 15% azul**. A janela é dividida em três regiões.
-
-### 3.1. Faixa superior (azul)
-
-Barra com o título **Lua Mutation Tester**. É o principal elemento de identidade visual da aplicação.
-
-### 3.2. Barra lateral (cinza, cerca de 25% da largura)
-
-Concentra os controles de entrada:
-
-- **Código Lua:** botão *Selecionar código*, que abre o seletor de arquivos (filtrado para `.lua`). Depois da escolha, o nome do arquivo é exibido em azul; antes disso, aparece "Nenhum selecionado".
-- **Suíte de testes:** botão *Selecionar suíte*, com o mesmo comportamento, para o arquivo que contém os testes.
-- **Executar mutador:** botão azul de destaque. Só fica habilitado quando o código e a suíte foram selecionados e nenhuma execução está em andamento. Durante a execução, o texto muda para "Executando..." e um indicador de carregamento (*spinner*) é exibido; os botões de seleção ficam desabilitados.
-
-### 3.3. Área de resultados (branca)
-
-Ocupa o restante da janela e muda conforme o estado da aplicação:
-
-- **Estado inicial:** uma mensagem orienta o usuário a selecionar os arquivos e clicar em *Executar mutador*.
-- **Cartões de resumo:** após a execução, três cartões mostram as **mutações totais**, as **sobreviventes** (em destaque azul) e as **mutações com erro**.
-- **Lista de sobreviventes:** cada mutação que sobreviveu aparece em um bloco com a linha, a categoria do candidato (`kind`) e a comparação entre a linha original (`-`) e a linha mutada (`+`). A lista possui rolagem. Se nenhuma mutação sobreviveu, a interface informa que a suíte detectou todas.
-- **Mensagens de erro:** falhas de leitura, de escrita do relatório ou da própria execução são exibidas em vermelho nesta área.
-
-### 3.4. Arquivos gerados
+A interface foi construída com `eframe`/`egui`.
 
 Durante a execução, são salvos dois arquivos na pasta do código selecionado:
 
@@ -161,52 +142,86 @@ As substituições são definidas pela função `symbol_list` em `mutador.rs`. A
 
 ### 5.1. Operadores relacionais
 
-| Operador original | Substituições |
-| --- | --- |
-| `<` | `>`, `<=`, `==`, `>=`, `~=` |
-| `>` | `<`, `>=`, `==`, `<=`, `~=` |
-| `~=` | `==`, `<`, `>`, `<=`, `>=` |
-| `<=` | `<`, `>`, `==`, `>=`, `~=` |
-| `>=` | `<`, `>`, `==`, `<=`, `~=` |
-| `==` | `<`, `>`, `<=`, `>=`, `~=` |
+| Operador original | Substituições               |
+| ---               | ---                         |
+| `<`               | `>`, `<=`, `==`, `>=`, `~=` |
+| `>`               | `<`, `>=`, `==`, `<=`, `~=` |
+| `~=`              | `==`, `<`, `>`, `<=`, `>=`  |
+| `<=`              | `<`, `>`, `==`, `>=`, `~=`  |
+| `>=`              | `<`, `>`, `==`, `<=`, `~=`  |
+| `==`              | `<`, `>`, `<=`, `>=`, `~=`  |
 
 ### 5.2. Operadores lógicos
 
-| Operador original | Substituição |
-| --- | --- |
-| `and` | `or` |
-| `or` | `and` |
-| `not` | remoção do operador (substituído por uma string vazia) |
+| Operador original | Substituição                                           |
+| ---               | ---                                                    |
+| `and`             | `or`                                                   |
+| `or`              | `and`                                                  |
+| `not`             | remoção do operador (substituído por uma string vazia) |
 
-### 5.3. Operadores aritméticos
+### 5.3. Operadores aritméticos binários
 
-| Operador original | Substituições |
-| --- | --- |
-| `+` | `-`, `*`, `/`, `%`, `^` |
-| `-` | `+`, `*`, `/`, `%`, `^` |
-| `*` | `+`, `-`, `/`, `%`, `^` |
-| `/` | `+`, `-`, `*`, `%`, `^` |
-| `%` | `+`, `-`, `*`, `/`, `^` |
-| `^` | `+`, `-`, `*`, `/`, `%` |
+| Operador original | Substituições                 |
+| ---               | ---                           |
+| `+`               | `-`, `*`, `/`, `//`, `%`, `^` |
+| `-`               | `+`, `*`, `/`, `//`, `%`, `^` |
+| `*`               | `+`, `-`, `/`, `//`, `%`, `^` |
+| `/`               | `+`, `-`, `*`, `//`, `%`, `^` |
+| `//`              | `+`, `-`, `*`, `/`, `%`, `^`  |
+| `%`               | `+`, `-`, `*`, `/`, `//`, `^` |
+| `^`               | `+`, `-`, `*`, `/`, `//`, `%` |
 
-Os operadores `//` (divisão inteira), concatenação (`..`) e operadores bit a bit ainda não são coletados pelo scanner.
+### 5.4. Operadores bit a bit binários
 
-### 5.4. Literais numéricos
+| Operador original | Substituições         |
+| ---               | ---                   |
+| `&`               | `\|`, `~`, `<<`, `>>` |
+| `\|`              | `&`, `~`, `<<`, `>>`  |
+| `~`               | `&`, `\|`, `<<`, `>>` |
+| `<<`              | `&`, `\|`, `~`, `>>`  |
+| `>>`              | `&`, `\|`, `~`, `<<`  |
+
+### 5.5 Operadores ariméticos unários
+
+| Operador original | Substituições                                          |
+| ---               | ---                                                    |
+| `-`               | remoção do operador (substituído por uma string vazia) |
+
+### 5.6 Operadores bit a bit unários
+
+| Operador original | Substituições                                          |
+| ---               | ---                                                    |
+| `~`               | remoção do operador (substituído por uma string vazia) |
+
+
+### 5.7 Literais numéricos
 
 O scanner também identifica literais numéricos (`NumberValue`). O mutador tenta interpretar o texto do literal primeiro como `i64` e, se isso falhar, como `f64`. Para inteiros e números de ponto flutuante, as mutações previstas são:
 
-| Substituição | Condição |
-| --- | --- |
-| `0` | valor original diferente de `0` |
-| `-valor` | valor original diferente de `0` |
-| `1` | valor original diferente de `1` |
-| `-1` | valor original diferente de `-1` |
-| `valor + 1` | sempre |
-| `valor - 1` | sempre |
+| Substituição | Condição                         |
+| ---          | ---                              |
+| `0`          | valor original diferente de `0`  |
+| `-valor`     | valor original diferente de `0`  |
+| `1`          | valor original diferente de `1`  |
+| `-1`         | valor original diferente de `-1` |
+| `valor + 1`  | sempre                           |
+| `valor - 1`  | sempre                           |
 
 As substituições por constantes são omitidas quando o valor já é igual ao de destino, evitando mutantes idênticos ao original.
 
 **Limitações numéricas:** a conversão utiliza `i64` e `f64` do Rust. Formatos numéricos de Lua que não sejam aceitos por essas conversões, como determinados literais hexadecimais, podem não gerar substituições. Além disso, as operações de incremento, decremento e inversão de sinal com inteiros ainda não possuem tratamento explícito de overflow.
+
+### 5.8 Operadores de concatenação
+
+| Operação original   | Substituições     |
+| ---                 | ---               |
+| `a .. b`            | `(a .. b) .. "!"` |
+
+### 5.9 Operadores de tamanho
+
+| Operação original | Substituições |
+| ---               | ---           |
+| `#x`              | `(#x) + 1`    |
 
 ## 6. Resultados e classificação dos mutantes
 
@@ -228,15 +243,15 @@ Na implementação atual, são considerados **sobreviventes** os mutantes com `f
 
 O arquivo `relatorio.json` contém as mutações classificadas como sobreviventes pelo critério atual. Cada registro possui:
 
-| Campo | Descrição |
-| --- | --- |
-| `candidate` | Dados do operador ou literal original identificado pelo scanner. |
-| `replacement` | Valor utilizado na mutação. |
-| `og_line` | Conteúdo da linha original. |
-| `mod_line` | Conteúdo da linha após a substituição. |
-| `num_tests` | Quantidade de marcações `[PASS]` e `[FAIL]` contabilizadas. |
-| `failed_tests` | Nomes dos testes que falharam com o mutante. |
-| `error` | Indica se a execução não produziu o resumo esperado da suíte. |
+| Campo          | Descrição                                                        |
+| ---            | ---                                                              |
+| `candidate`    | Dados do operador ou literal original identificado pelo scanner. |
+| `replacement`  | Valor utilizado na mutação.                                      |
+| `og_line`      | Conteúdo da linha original.                                      |
+| `mod_line`     | Conteúdo da linha após a substituição.                           |
+| `num_tests`    | Quantidade de marcações `[PASS]` e `[FAIL]` contabilizadas.      |
+| `failed_tests` | Nomes dos testes que falharam com o mutante.                     |
+| `error`        | Indica se a execução não produziu o resumo esperado da suíte.    |
 
 ## 7. Tecnologias e dependências
 
@@ -246,13 +261,13 @@ O arquivo `relatorio.json` contém as mutações classificadas como sobrevivente
 
 Bibliotecas Rust utilizadas (declaradas no `Cargo.toml`):
 
-| Biblioteca | Versão | Uso no projeto |
-| --- | --- | --- |
-| `eframe` | 0.37.0 | Janela e interface gráfica (inclui o `egui`) |
-| `full_moon` | 2.2 | Parsing do código Lua e geração da AST (feature `serde` habilitada) |
-| `rfd` | 0.18.0 | Janelas de seleção de arquivos |
-| `serde` | 1 | Serialização das estruturas de dados (feature `derive`) |
-| `serde_json` | 1 | Geração dos relatórios em JSON |
+| Biblioteca   | Versão | Uso no projeto                                                      |
+| ---          | ---    | ---                                                                 |
+| `eframe`     | 0.37.0 | Janela e interface gráfica (inclui o `egui`)                        |
+| `full_moon`  | 2.2    | Parsing do código Lua e geração da AST (feature `serde` habilitada) |
+| `rfd`        | 0.18.0 | Janelas de seleção de arquivos                                      |
+| `serde`      | 1      | Serialização das estruturas de dados (feature `derive`)             |
+| `serde_json` | 1      | Geração dos relatórios em JSON                                      |
 
 Trecho do `Cargo.toml`:
 
@@ -392,7 +407,6 @@ Embora a identificação dos candidatos já utilize a AST, há pontos que podem 
 - **Validação da execução:** verificar o status de saída do processo Lua.
 - **Tempo limite:** interromper execuções que excedam um tempo máximo, evitando travamentos causados por laços infinitos em mutantes.
 - **Validação da suíte:** conferir se a quantidade de testes executados corresponde à quantidade esperada e se a suíte passa no código original antes da mutação.
-- **Cobertura de operadores:** ampliar a cobertura para outros operadores e construções da linguagem, como `//`, concatenação (`..`), operadores unários e bit a bit.
 - **Cobertura numérica:** ampliar o reconhecimento de formatos numéricos aceitos por Lua e tratar overflow nas operações com inteiros.
 - **Mutação de operandos:** avaliar a inclusão de mutações para outros tipos de valores, como strings, booleanos, `nil` e identificadores.
 - **Tratamento de erros:** tornar mais robustos os casos de falhas de parsing e problemas ao executar o interpretador, evitando interrupções abruptas (`panic`).
