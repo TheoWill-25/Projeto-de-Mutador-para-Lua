@@ -1,6 +1,5 @@
-local x = 5  
-if 2 > 1 and 3 == x then  
-    x = 6 
-else 
-    x = 7 
+local x = 5 
+local y = 4
+if x & y then
+    print('oi')
 end

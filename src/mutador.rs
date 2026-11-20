@@ -23,7 +23,7 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>, path_code: String, pat
 
     for sym in symbol{
 
-        let new_symbols = symbol_list(&sym);
+        let new_symbols = symbol_list(&sym, code);
         
 
         for ns in new_symbols {
@@ -88,7 +88,7 @@ pub fn symbol_mutator(code: &str, symbol: Vec<Candidate>, path_code: String, pat
 }
 
 
-fn symbol_list(sym: &Candidate) -> Vec<String> {
+fn symbol_list(sym: &Candidate, code: &str) -> Vec<String> {
     let mut new_symbs: Vec<String> = Vec::new();
 
     match sym.kind.as_str() {
@@ -158,12 +158,14 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                 _ => new_symbs.push(sym.original.to_string()),
             }
         }
+
         "ArithmeticOperator" => {
             match sym.original.as_str() {
                 "+" => {
                     new_symbs.push("-".to_string());
                     new_symbs.push("*".to_string());
                     new_symbs.push("/".to_string());
+                    new_symbs.push("//".to_string());
                     new_symbs.push("%".to_string());
                     new_symbs.push("^".to_string());
                 }
@@ -171,6 +173,7 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                     new_symbs.push("+".to_string());
                     new_symbs.push("*".to_string());
                     new_symbs.push("/".to_string());
+                    new_symbs.push("//".to_string());
                     new_symbs.push("%".to_string());
                     new_symbs.push("^".to_string());
                 }
@@ -178,6 +181,7 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                     new_symbs.push("+".to_string());
                     new_symbs.push("-".to_string());
                     new_symbs.push("/".to_string());
+                    new_symbs.push("//".to_string());
                     new_symbs.push("%".to_string());
                     new_symbs.push("^".to_string());
                 }
@@ -185,6 +189,15 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                     new_symbs.push("+".to_string());
                     new_symbs.push("-".to_string());
                     new_symbs.push("*".to_string());
+                    new_symbs.push("//".to_string());
+                    new_symbs.push("%".to_string());
+                    new_symbs.push("^".to_string());
+                }
+                "//" => {
+                    new_symbs.push("+".to_string());
+                    new_symbs.push("-".to_string());
+                    new_symbs.push("*".to_string());
+                    new_symbs.push("/".to_string());
                     new_symbs.push("%".to_string());
                     new_symbs.push("^".to_string());
                 }
@@ -193,6 +206,7 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                     new_symbs.push("-".to_string());
                     new_symbs.push("*".to_string());
                     new_symbs.push("/".to_string());
+                    new_symbs.push("//".to_string());
                     new_symbs.push("%".to_string());
                 }
                 "%" => {
@@ -200,10 +214,68 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                     new_symbs.push("-".to_string());
                     new_symbs.push("*".to_string());
                     new_symbs.push("/".to_string());
+                    new_symbs.push("//".to_string());
                     new_symbs.push("^".to_string());
                 }
 
                 _ => new_symbs.push(sym.original.to_string()),
+            }
+        }
+
+        "BitwiseOperator" => {
+            match sym.original.as_str() {
+                "&" => {
+                    new_symbs.push("|".to_string());
+                    new_symbs.push("~".to_string());
+                    new_symbs.push("<<".to_string());
+                    new_symbs.push(">>".to_string());
+                }
+                "|" => {
+                    new_symbs.push("&".to_string());
+                    new_symbs.push("~".to_string());
+                    new_symbs.push("<<".to_string());
+                    new_symbs.push(">>".to_string());
+                }
+                "~" => {
+                    new_symbs.push("&".to_string());
+                    new_symbs.push("|".to_string());
+                    new_symbs.push("<<".to_string());
+                    new_symbs.push(">>".to_string());
+                }
+                "<<" => {
+                    new_symbs.push("&".to_string());
+                    new_symbs.push("|".to_string());
+                    new_symbs.push("~".to_string());
+                    new_symbs.push(">>".to_string());
+                }
+                ">>" => {
+                    new_symbs.push("&".to_string());
+                    new_symbs.push("|".to_string());
+                    new_symbs.push("<<".to_string());
+                    new_symbs.push("~".to_string());
+                }
+
+                _ => new_symbs.push(sym.original.to_string()),
+            }
+        }
+
+        "UnaryArithmeticOperator" => {
+            match sym.original.as_str() {
+                "-" => {
+                    new_symbs.push("".to_string());
+                }
+
+                _ => new_symbs.push(sym.original.to_string())
+            }
+        }
+        
+        "UnaryBitwiseOperator" => {
+            match sym.original.as_str() {
+                "~" => {
+                    new_symbs.push("".to_string());
+                }
+
+                _ => new_symbs.push(sym.original.to_string())
             }
         }
 
@@ -234,6 +306,18 @@ fn symbol_list(sym: &Candidate) -> Vec<String> {
                 new_symbs.push((num - 1.0).to_string());
             }
         }
+
+        "ConcatenationOperator" => {
+            let expr = &code[sym.start..sym.end];
+            new_symbs.push(format!("(({expr}) .. \"!\")"));
+        }
+
+        "LengthOperator" => {
+            let expr = &code[sym.start..sym.end];
+            new_symbs.push(format!("({expr} + 1)"));
+        }
+
+
         _ => new_symbs.push(sym.original.to_string()),
     }
 

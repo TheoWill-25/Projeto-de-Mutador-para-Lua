@@ -1,5 +1,5 @@
-
 use serde::Serialize;
+use full_moon::node::Node;
 use full_moon::visitors::Visitor;
 use full_moon::ast::{Expression, BinOp, UnOp};
 
@@ -153,6 +153,17 @@ impl Visitor for Scanner {
                     });
                 }
 
+                BinOp::DoubleSlash(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "ArithmeticOperator".to_string(),
+                        original: "//".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
                 BinOp::Percent(token) => {
 
                     self.candidates.push(Candidate {
@@ -169,6 +180,71 @@ impl Visitor for Scanner {
                     self.candidates.push(Candidate {
                         kind: "ArithmeticOperator".to_string(),
                         original: "^".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Ampersand(token ) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "BitwiseOperator".to_string(),
+                        original: "&".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Pipe(token ) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "BitwiseOperator".to_string(),
+                        original: "|".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::Tilde(token ) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "BitwiseOperator".to_string(),
+                        original: "~".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::DoubleLessThan(token ) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "BitwiseOperator".to_string(),
+                        original: "<<".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::DoubleGreaterThan(token ) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "BitwiseOperator".to_string(),
+                        original: ">>".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                BinOp::TwoDots(token) => {
+                    self.candidates.push(Candidate{
+                        kind: "ConcatenationOperator".to_string(),
+                        original: "..".to_string(),
                         start: token.token().start_position().bytes(),
                         end: token.token().end_position().bytes(),
                         line: token.token().start_position().line(),
@@ -192,6 +268,40 @@ impl Visitor for Scanner {
                         end: token.token().end_position().bytes(),
                         line: token.token().start_position().line(),
                     });
+                }
+
+                UnOp::Tilde(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "UnaryBitwiseOperator".to_string(),
+                        original: "~".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                UnOp::Minus(token) => {
+
+                    self.candidates.push(Candidate {
+                        kind: "UnaryArithmeticOperator".to_string(),
+                        original: "-".to_string(),
+                        start: token.token().start_position().bytes(),
+                        end: token.token().end_position().bytes(),
+                        line: token.token().start_position().line(),
+                    });
+                }
+
+                UnOp::Hash(_) => {
+                    if let Some((inicio, fim)) = expr.range() {
+                        self.candidates.push(Candidate {
+                            kind: "LengthOperator".to_string(),
+                            original: "#".to_string(),
+                            start: inicio.bytes(),
+                            end: fim.bytes(),
+                            line: inicio.line(),
+                        });
+                    }
                 }
 
                 _=> {}
