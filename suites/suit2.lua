@@ -1,4 +1,5 @@
-local Evaluator = require("codigo2")
+local suite_dir = arg[0]:match("^(.*[/\\])") or "./"
+local Evaluator = dofile(suite_dir .. "../codigos/codigo2.lua")
 
 local passed = 0
 local failed = 0

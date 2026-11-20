@@ -1,4 +1,5 @@
-local Evaluator = require("codigo")
+local suite_dir = arg[0]:match("^(.*[/\\])") or "./"
+local Evaluator = dofile(suite_dir .. "../codigos/codigo.lua")
 local Status = Evaluator.Status
 
 local passed = 0

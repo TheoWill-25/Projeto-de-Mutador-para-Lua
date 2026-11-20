@@ -75,7 +75,15 @@ A estrutura `Mutation` registra o candidato original, o valor substituto, a linh
 
 ### Arquivos Lua (código e suíte)
 
-O código a ser mutado e a suíte de testes são **escolhidos pelo usuário na interface**; não é necessário que tenham nomes fixos. No exemplo utilizado durante o desenvolvimento, `codigo.lua` contém a implementação de `ScholarshipEligibilityEvaluator.evaluate_scholarship`, responsável por avaliar a elegibilidade de uma pessoa para uma bolsa, e `suit.lua` contém os testes.
+O código a ser mutado e a suíte de testes são escolhidos na interface. Os exemplos do repositório estão organizados nestes pares:
+
+| Código | Suíte |
+| --- | --- |
+| `codigos/codigo.lua` | `suites/suit.lua` |
+| `codigos/codigo2.lua` | `suites/suit2.lua` |
+| `codigos/codigo3.lua` | `suites/suit3.lua` |
+
+Para executar apenas a terceira suíte, rode `lua suites/suit3.lua` na raiz do repositório.
 
 **Formato esperado da suíte:** ela deve utilizar `pcall` para capturar falhas de cada caso e imprimir, na saída padrão:
 
@@ -369,11 +377,9 @@ Projeto-de-Mutador-para-Lua/
 │   ├── parser.rs     # Parsing Lua e geração da AST
 │   ├── scanner.rs    # Visitação da AST e identificação dos candidatos
 │   └── mutador.rs    # Geração, execução e registro dos mutantes
-├── codigo.lua        # Exemplo de código Lua submetido à mutação
-├── suit.lua          # Exemplo de suíte de testes
-├── Cargo.toml        # Dependências e configuração Rust
-├── AST.json          # AST serializada do código analisado (gerado)
-└── relatorio.json    # Relatório das mutações sobreviventes (gerado)
+├── codigos/          # Exemplos e arquivos Lua para análise
+├── suites/           # Suítes dos exemplos Lua
+└── Cargo.toml        # Dependências e configuração Rust
 ```
 
 Os arquivos `AST.json` e `relatorio.json` são gerados durante a execução, na pasta do código Lua selecionado.

@@ -1,4 +1,5 @@
-local Operators = require("codigo3")
+local suite_dir = arg[0]:match("^(.*[/\\])") or "./"
+local Operators = dofile(suite_dir .. "../codigos/codigo3.lua")
 
 local passed = 0
 local failed = 0
